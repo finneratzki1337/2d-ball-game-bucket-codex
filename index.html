@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>2D Ball Game</title>
+  <title>ASTRA 500</title>
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
   <script defer src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
   <script defer src="game.js"></script>
 </head>
 <body>
+  <h1 id="title">ASTRA 500</h1>
   <aside id="menu">
     <label># Balls
       <input id="ballsInput" type="number" min="1" max="200" value="4" />
@@ -28,6 +29,10 @@
   </aside>
   <div id="stage">
     <canvas id="game" width="1024" height="576"></canvas>
+  </div>
+  <div id="winOverlay">
+    <h2>GAME WON</h2>
+    <button id="relaunchBtn">RELAUNCH</button>
   </div>
 </body>
 </html>
