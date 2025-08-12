@@ -1,46 +1,174 @@
+/* =============================================
+   GLOBAL LAYOUT & THEME (Dark / Night Sky)
+   -----------------------------------------
+   This stylesheet was refactored to support a
+   darker "night sky" aesthetic. Elements were
+   slightly reduced in size and spacing relaxed
+   to reduce overlap on smaller viewports.
+   ============================================= */
+
 body {
   margin: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   font-family: 'Press Start 2P', monospace;
-  background: #87ceeb;
-  color: #fff;
-  position: relative;
-}
-
-#menu {
-  background: rgba(0, 0, 0, 0.3);
-  color: #fff;
-  padding: 10px;
-  box-sizing: border-box;
+/* Main horizontal shell holding left panel, stage, right panel */
+.game-shell {
   display: flex;
-  flex-wrap: wrap;
+  align-items: stretch;
   justify-content: center;
-  gap: 10px;
-  margin-top: 10px;
-  border: 4px solid #000;
+  gap: 28px;
+  width: 100%;
+  max-width: 1800px; /* generous widescreen cap */
+  padding: 70px 40px 40px; /* top padding leaves title overlay space */
+  box-sizing: border-box;
 }
 
-#menu label {
-  font-size: 12px;
+/* Make panels match stage height visually */
+.game-shell #stage { flex: 0 0 auto; }
+.game-shell .floating-panel { position: relative; top: 0; }
+
+/* Ensure full height alignment */
+.game-shell .floating-panel,
+.game-shell #stage { display: flex; flex-direction: column; }
+
+/* Let panels stretch to canvas height after scaling */
+@media (min-width: 1200px) {
+  .game-shell { gap: 38px; }
+}
+  /* Night gradient backdrop (behind canvas) */
+  background: radial-gradient(circle at 50% 35%, #13273f 0%, #0a1625 55%, #050b14 100%);
+  color: #e6eef7;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Legacy #menu removed; replaced with floating retro panels */
+
+/* Floating retro panels (left: system, right: cannon) */
+.floating-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 12px 16px;
+  width: 200px;
+  background: repeating-linear-gradient(
+      45deg,
+      rgba(40,60,85,0.55) 0px,
+      rgba(40,60,85,0.55) 4px,
+      rgba(28,44,63,0.55) 4px,
+      rgba(28,44,63,0.55) 8px
+    ),
+    linear-gradient(#1a2e47, #13263a);
+  border: 3px solid #0b1624;
+  box-shadow: 0 0 0 2px #2d4965 inset, 0 0 12px -2px #08111c;
+  border-radius: 8px;
+  color: #dbe7f4;
+  font-size: 10px;
+  pointer-events: auto;
+  min-height: 100%;
+}
+
+.floating-panel.left-panel { order: 0; }
+.floating-panel.right-panel { order: 2; }
+
+/* Pixel-esque beveled corners using pseudo-elements */
+.floating-panel::before, .floating-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 1px solid rgba(255,255,255,0.08);
+  mix-blend-mode: overlay;
+  border-radius: 4px;
+}
+
+.panel-header {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-align: center;
+  padding: 4px 6px 6px;
+  background: linear-gradient(#20374f, #182a3d);
+  border: 2px solid #091522;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px #375876 inset, 0 2px 0 #091421;
+  text-shadow: 0 0 6px #4ea3ff;
+}
+
+.panel-separator {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #4ea3ff, transparent);
+  margin: 4px 0 0;
+  opacity: 0.6;
+}
+
+.floating-panel label {
+  font-size: 10px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  text-align: center;
+  text-transform: uppercase;
 }
+
+.floating-panel input[type=number] {
+  background: #091622;
+  color: #d6e7f6;
+  border: 2px solid #27415b;
+  border-radius: 4px;
+  padding: 4px;
+  font-family: inherit;
+  font-size: 11px;
+  width: 70px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.floating-panel input[type=range] {
+  width: 100%;
+  accent-color: #4ea3ff;
+}
+
+.button-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.wide-btn { width: 100%; }
+
+/* Reuse button / color / player styles inside panels */
+
+
+/* General label style now localized to panels as needed */
 
 button {
   font-family: inherit;
-  font-size: 12px;
-  padding: 8px;
+  font-size: 11px;
+  padding: 6px 10px;
   cursor: pointer;
-  background: #fff;
-  border: 4px solid #000;
-  box-shadow: 2px 2px 0 #000;
+  background: linear-gradient(#1c3248, #132536);
+  color: #f2f7fc;
+  border: 2px solid #375876;
+  box-shadow: 2px 2px 0 #09121d;
+  border-radius: 6px;
+  transition: background 0.2s, transform 0.15s;
 }
 
 button:focus {
-  outline: 2px dashed #000;
+  outline: 2px dashed #a7d1ff;
+  outline-offset: 2px;
+}
+
+button:hover {
+  background: linear-gradient(#284b66, #1e3750);
+}
+
+button:active {
+  transform: translateY(1px);
+  box-shadow: 1px 1px 0 #09121d;
 }
 
 .color-buttons {
@@ -49,14 +177,18 @@ button:focus {
 }
 
 .color-btn {
-  width: 24px;
-  height: 24px;
-  border: 2px solid #000;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #203041;
   cursor: pointer;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #000 inset;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .color-btn.selected {
-  outline: 2px solid #fff;
+  box-shadow: 0 0 0 2px #fff, 0 0 6px 2px rgba(255,255,255,0.4);
+  transform: scale(1.1);
 }
 
 .player-buttons {
@@ -65,16 +197,20 @@ button:focus {
 }
 
 .player-btn {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  border: 2px solid #000;
-  background: #fff;
+  border: 2px solid #203041;
+  background: #132536;
   cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .player-btn.selected {
-  outline: 2px solid #fff;
+  box-shadow: 0 0 0 2px #fff, 0 0 6px 2px rgba(255,255,255,0.4);
 }
 
 .player-btn img {
@@ -89,6 +225,11 @@ button:focus {
   image-rendering: pixelated;
   width: 100%;
   max-width: 1024px;
+  border: 2px solid #1f3347;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 0 2px #08111c, 0 0 18px -4px #0c2238;
+  background: #091320; /* fallback if canvas not painted */
 }
 
 #game {
@@ -97,41 +238,40 @@ button:focus {
   display: block;
 }
 
+/* Subtle scanline overlay for retro feel */
 #stage::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   pointer-events: none;
   background: repeating-linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0.1) 0px,
-    rgba(0, 0, 0, 0.1) 1px,
-    transparent 2px,
-    transparent 3px
+    rgba(255, 255, 255, 0.03) 0px,
+    rgba(255, 255, 255, 0.03) 2px,
+    transparent 3px,
+    transparent 4px
   );
+  mix-blend-mode: overlay;
 }
 
 #title {
   position: absolute;
-  top: 10px;
+  top: 12px;
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 32px;
+  font-size: 30px;
   pointer-events: none;
   z-index: 5;
+  color: #f0f6ff;
+  text-shadow: 0 0 8px #1d70b8, 0 0 14px #1d70b8;
+  letter-spacing: 2px;
 }
 
 #winOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  inset: 0;
+  background: radial-gradient(circle at 50% 40%, rgba(20,40,70,0.95), rgba(5,10,20,0.95));
   display: none;
   flex-direction: column;
   justify-content: center;
@@ -139,6 +279,7 @@ button:focus {
   font-family: 'Press Start 2P', monospace;
   color: #fff;
   z-index: 20;
+  animation: fadeIn 0.4s ease;
 }
 
 #winOverlay.show {
@@ -151,10 +292,27 @@ button:focus {
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 12px;
+  font-size: 11px;
   pointer-events: none;
+  text-shadow: 0 0 5px #000;
 }
 
 #stats div {
   margin: 2px 0;
+}
+
+/* Small / narrow viewport tweaks */
+@media (max-width: 1280px) {
+  .game-shell { padding: 70px 24px 32px; }
+}
+
+@media (max-width: 980px) {
+  .game-shell { flex-direction: column; align-items: center; gap: 20px; }
+  .floating-panel { width: 90%; max-width: 500px; }
+  .floating-panel.left-panel, .floating-panel.right-panel { order: unset; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

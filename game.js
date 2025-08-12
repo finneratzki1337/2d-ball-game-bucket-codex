@@ -1,5 +1,10 @@
 /* 2D Ball Game main script */
 
+// NOTE: UI has been restructured into two floating panels:
+//  - Left: maintenance (delete/reset)
+//  - Right: cannon controls (angle, power, color, player, fire)
+// The original single #menu element was removed from HTML/CSS.
+
 // Matter aliases
 const Engine = Matter.Engine;
 const World = Matter.World;
@@ -109,7 +114,7 @@ function init() {
   canvas = document.getElementById('game');
   ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
-  stage = document.getElementById('stage');
+  stage = document.getElementById('stage'); // stage still exists; layout changed but id retained
   winOverlay = document.getElementById('winOverlay');
   relaunchBtn = document.getElementById('relaunchBtn');
   continueBtn = document.getElementById('continueBtn');
@@ -424,34 +429,29 @@ function toggleAuto() {
 }
 
 function resetGame() {
-  balls.forEach(b => World.remove(world, b));
+  // Remove all dynamic & prefilled bodies and rebuild initial state.
+  [...balls, ...leftPrefill, ...rightPrefill].forEach(b => World.remove(world, b));
   balls.length = 0;
   caughtBalls.length = 0;
+  leftPrefill.length = 0;
+  rightPrefill.length = 0;
   pops.length = 0;
   countedIds.clear();
   caughtCount = 0;
   newCaughtCount = 0;
+  baseCount = 0;
+  currentBatch = 0;
+  // Re-populate buckets
+  prefillBuckets();
 }
 
 function handleKeyDown(e) {
-  switch (e.code) {
-    case 'ArrowLeft':
-      setAngle(angleDeg + 1);
-      break;
-    case 'ArrowRight':
-      setAngle(angleDeg - 1);
-      break;
-    case 'ArrowDown':
-      setPower(powerPct - 1);
-      break;
-    case 'ArrowUp':
-      setPower(powerPct + 1);
-      break;
-    case 'Space':
-      fire(+ballsInput.value);
-      e.preventDefault();
-      break;
-  }
+  // Prevent simultaneous angle/power jitter by isolating axes.
+  if (e.code === 'ArrowLeft') { setAngle(angleDeg + 1); e.preventDefault(); }
+  else if (e.code === 'ArrowRight') { setAngle(angleDeg - 1); e.preventDefault(); }
+  else if (e.code === 'ArrowUp') { setPower(powerPct + 1); e.preventDefault(); }
+  else if (e.code === 'ArrowDown') { setPower(powerPct - 1); e.preventDefault(); }
+  else if (e.code === 'Space') { fire(+ballsInput.value); e.preventDefault(); }
 }
 
 function resizeCanvas() {

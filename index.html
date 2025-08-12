@@ -10,50 +10,61 @@
 </head>
 <body>
   <h1 id="title">ASTRA 500</h1>
-  <div id="stage">
-    <canvas id="game" width="1024" height="576"></canvas>
+  <div class="game-shell">
+    <!-- Left Panel outside stage -->
+    <div class="floating-panel left-panel" aria-label="maintenance panel">
+      <div class="panel-header">SYSTEM</div>
+      <label>DELETE
+        <div id="deleteColorButtons" class="color-buttons">
+          <button class="color-btn selected" data-color="red" style="background:#f94144" title="Red"></button>
+          <button class="color-btn" data-color="blue" style="background:#277da1" title="Blue"></button>
+          <button class="color-btn" data-color="yellow" style="background:#f9c74f" title="Yellow"></button>
+          <button class="color-btn" data-color="green" style="background:#90be6d" title="Green"></button>
+          <button class="color-btn" data-color="orange" style="background:#f3722c" title="Orange"></button>
+        </div>
+        <input id="deleteCountInput" type="number" min="1" max="200" value="1" />
+        <button id="deleteBtn">DELETE</button>
+      </label>
+      <div class="panel-separator"></div>
+      <button id="resetBtn" class="wide-btn">RESET GAME</button>
+    </div>
+    <div id="stage">
+      <canvas id="game" width="1024" height="576"></canvas>
+    </div>
+    <!-- Right Panel outside stage -->
+    <div class="floating-panel right-panel" aria-label="cannon panel">
+      <div class="panel-header">CANNON</div>
+      <label># BALLS
+        <input id="ballsInput" type="number" min="1" max="200" value="4" />
+      </label>
+      <label>COLOR
+        <div id="colorButtons" class="color-buttons">
+          <button class="color-btn selected" data-color="red" style="background:#f94144" title="Red"></button>
+          <button class="color-btn" data-color="blue" style="background:#277da1" title="Blue"></button>
+          <button class="color-btn" data-color="yellow" style="background:#f9c74f" title="Yellow"></button>
+          <button class="color-btn" data-color="green" style="background:#90be6d" title="Green"></button>
+          <button class="color-btn" data-color="orange" style="background:#f3722c" title="Orange"></button>
+        </div>
+      </label>
+      <label>PLAYER
+        <div id="playerButtons" class="player-buttons">
+          <button class="player-btn selected" data-player="player1"><img src="player.png" alt="Player 1" /></button>
+          <button class="player-btn" data-player="player2"><img src="player2.png" alt="Player 2" /></button>
+          <button class="player-btn" data-player="player3"><img src="player3.png" alt="Player 3" /></button>
+        </div>
+      </label>
+      <label>ANGLE
+        <input id="angleInput" type="range" min="10" max="170" value="45" />
+      </label>
+      <label>POWER
+        <input id="powerInput" type="range" min="0" max="100" value="60" />
+      </label>
+      <div class="button-row">
+        <button id="shootBtn">SHOOT</button>
+        <button id="autoBtn">AUTO-FIRE</button>
+      </div>
+    </div>
   </div>
-  <aside id="menu">
-    <label># Balls
-      <input id="ballsInput" type="number" min="1" max="200" value="4" />
-    </label>
-    <label>Color
-      <div id="colorButtons" class="color-buttons">
-        <button class="color-btn selected" data-color="red" style="background:#f94144" title="Red"></button>
-        <button class="color-btn" data-color="blue" style="background:#277da1" title="Blue"></button>
-        <button class="color-btn" data-color="yellow" style="background:#f9c74f" title="Yellow"></button>
-        <button class="color-btn" data-color="green" style="background:#90be6d" title="Green"></button>
-        <button class="color-btn" data-color="orange" style="background:#f3722c" title="Orange"></button>
-      </div>
-    </label>
-    <label>Player
-      <div id="playerButtons" class="player-buttons">
-        <button class="player-btn selected" data-player="player1"><img src="player.png" alt="Player 1" /></button>
-        <button class="player-btn" data-player="player2"><img src="player2.png" alt="Player 2" /></button>
-        <button class="player-btn" data-player="player3"><img src="player3.png" alt="Player 3" /></button>
-      </div>
-    </label>
-    <label>Angle
-      <input id="angleInput" type="range" min="10" max="170" value="45" />
-    </label>
-    <label>Power
-      <input id="powerInput" type="range" min="0" max="100" value="60" />
-    </label>
-    <button id="shootBtn">SHOOT</button>
-    <button id="autoBtn">AUTO-FIRE</button>
-    <button id="resetBtn">RESET</button>
-    <label>Delete Balls
-      <div id="deleteColorButtons" class="color-buttons">
-        <button class="color-btn selected" data-color="red" style="background:#f94144" title="Red"></button>
-        <button class="color-btn" data-color="blue" style="background:#277da1" title="Blue"></button>
-        <button class="color-btn" data-color="yellow" style="background:#f9c74f" title="Yellow"></button>
-        <button class="color-btn" data-color="green" style="background:#90be6d" title="Green"></button>
-        <button class="color-btn" data-color="orange" style="background:#f3722c" title="Orange"></button>
-      </div>
-      <input id="deleteCountInput" type="number" min="1" max="200" value="1" />
-      <button id="deleteBtn">DELETE</button>
-    </label>
-  </aside>
   <div id="stats">
     <div id="leftStats"></div>
     <div id="rightStats"></div>
