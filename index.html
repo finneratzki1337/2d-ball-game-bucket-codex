@@ -15,10 +15,22 @@
       <input id="ballsInput" type="number" min="1" max="200" value="4" />
     </label>
     <label>Color
-      <input id="colorInput" type="color" value="#f94144" />
+      <select id="colorInput">
+        <option value="red" selected>Red</option>
+        <option value="blue">Blue</option>
+        <option value="yellow">Yellow</option>
+        <option value="green">Green</option>
+        <option value="orange">Orange</option>
+      </select>
+    </label>
+    <label>Player
+      <select id="playerSelect">
+        <option value="player1" selected>Player 1</option>
+        <option value="player2">Player 2</option>
+      </select>
     </label>
     <label>Angle
-      <input id="angleInput" type="range" min="10" max="170" value="135" />
+      <input id="angleInput" type="range" min="10" max="170" value="45" />
     </label>
     <label>Power
       <input id="powerInput" type="range" min="0" max="100" value="60" />

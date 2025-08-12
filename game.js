@@ -15,8 +15,9 @@ const BARREL_LEN = 60;
 const BALL_RADIUS = 8;
 const CANNON_X = 900;
 const CANNON_Y = 420;
-const LEFT_BUCKET = { x: 220, y: 500, width: 260, height: 260 };
-const RIGHT_BUCKET = { x: 560, y: 510, width: 380, height: 380 };
+// bucket positions (15% smaller than before and spaced out)
+const LEFT_BUCKET = { x: 200, y: 520, width: 221, height: 221 };
+const RIGHT_BUCKET = { x: 600, y: 530, width: 323, height: 323 };
 
 // configure colours
 const COLORS = {
@@ -42,7 +43,7 @@ let baseCount = 0;
 const countedIds = new Set();
 const balls = [];
 let engine, world, runner, sensor;
-let playerImg;
+let playerImg, player1Img, player2Img;
 let angleDeg = 135;
 let powerPct = 60;
 let autoInterval = null;
@@ -52,7 +53,7 @@ let armUpTicks = 0;
 
 // DOM refs
 let canvas, ctx, stage, winOverlay, relaunchBtn;
-let ballsInput, colorInput, angleInput, powerInput, shootBtn, autoBtn, resetBtn;
+let ballsInput, colorInput, playerSelect, angleInput, powerInput, shootBtn, autoBtn, resetBtn;
 const leftPrefill = [];
 const rightPrefill = [];
 
@@ -100,23 +101,30 @@ function init() {
   relaunchBtn = document.getElementById('relaunchBtn');
   relaunchBtn.addEventListener('click', () => window.location.reload());
 
-  playerImg = new Image();
-  playerImg.src = 'player.png';
+  player1Img = new Image();
+  player1Img.src = 'player.png';
+  player2Img = new Image();
+  player2Img.src = 'player2.png';
+  playerImg = player1Img;
 
   // inputs
   ballsInput = document.getElementById('ballsInput');
   colorInput = document.getElementById('colorInput');
+  playerSelect = document.getElementById('playerSelect');
   angleInput = document.getElementById('angleInput');
   powerInput = document.getElementById('powerInput');
   shootBtn = document.getElementById('shootBtn');
   autoBtn = document.getElementById('autoBtn');
   resetBtn = document.getElementById('resetBtn');
 
-  angleInput.addEventListener('input', () => setAngle(angleInput.value));
+  angleInput.addEventListener('input', () => setAngleFromInput(angleInput.value));
   powerInput.addEventListener('input', () => setPower(powerInput.value));
   ballsInput.addEventListener('change', () => {
     let v = clamp(+ballsInput.value, 1, 200);
     ballsInput.value = v;
+  });
+  playerSelect.addEventListener('change', () => {
+    playerImg = playerSelect.value === 'player2' ? player2Img : player1Img;
   });
 
   shootBtn.addEventListener('click', () => {
@@ -134,6 +142,8 @@ function init() {
 
   setupPhysics();
   prefillBuckets();
+  setAngleFromInput(angleInput.value);
+  setPower(powerInput.value);
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
   requestAnimationFrame(render);
@@ -257,7 +267,7 @@ function fire(n) {
 
 function fireOne(powerScale = 1) {
   const angle = angleDeg * Math.PI / 180;
-  const color = colorInput.value;
+  const color = COLORS[colorInput.value];
   const speed = powerToVelocity(powerPct * powerScale);
   const muzzle = {
     x: CANNON_X + Math.cos(angle) * BARREL_LEN,
@@ -283,7 +293,12 @@ function fireOne(powerScale = 1) {
 
 function setAngle(val) {
   angleDeg = clamp(+val, 10, 170);
-  angleInput.value = angleDeg;
+  angleInput.value = 180 - angleDeg;
+}
+
+function setAngleFromInput(val) {
+  angleDeg = clamp(180 - (+val), 10, 170);
+  angleInput.value = val;
 }
 function setPower(val) {
   powerPct = clamp(+val, 0, 100);
@@ -312,10 +327,10 @@ function resetGame() {
 function handleKeyDown(e) {
   switch (e.code) {
     case 'ArrowLeft':
-      setAngle(angleDeg - 1);
+      setAngle(angleDeg + 1);
       break;
     case 'ArrowRight':
-      setAngle(angleDeg + 1);
+      setAngle(angleDeg - 1);
       break;
     case 'ArrowDown':
       setPower(powerPct - 1);
@@ -448,6 +463,13 @@ function drawCannon() {
   ctx.beginPath();
   ctx.arc(CANNON_X + Math.cos(angle) * BARREL_LEN, CANNON_Y - Math.sin(angle) * BARREL_LEN, 3, 0, Math.PI * 2);
   ctx.fill();
+
+  // angle & power labels
+  ctx.font = '12px "Press Start 2P"';
+  ctx.textAlign = 'center';
+  const displayAngle = 180 - angleDeg;
+  ctx.fillText(Math.round(displayAngle) + '\u00B0', CANNON_X, CANNON_Y + 40);
+  ctx.fillText('P ' + Math.round(powerPct) + '%', CANNON_X, CANNON_Y + 56);
 }
 
 function drawCharacter() {
