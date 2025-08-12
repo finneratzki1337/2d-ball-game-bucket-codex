@@ -16,7 +16,7 @@ const BALL_RADIUS = 8;
 const CANNON_X = 900;
 const CANNON_Y = 420;
 // bucket positions (slightly bigger to avoid overlap)
-const LEFT_BUCKET = { x: 200, y: 520, width: 228, height: 228 };
+const LEFT_BUCKET = { x: 230, y: 520, width: 300, height: 300 };
 const RIGHT_BUCKET = { x: 600, y: 530, width: 333, height: 333 };
 
 // configure colours
@@ -53,7 +53,7 @@ const balls = [];
 const caughtBalls = [];
 const pops = [];
 let engine, world, runner, sensor;
-let playerImg, player1Img, player2Img;
+let playerImg, player1Img, player2Img, player3Img;
 let angleDeg = 135;
 let powerPct = 60;
 let autoInterval = null;
@@ -121,6 +121,8 @@ function init() {
   player1Img.src = 'player.png';
   player2Img = new Image();
   player2Img.src = 'player2.png';
+  player3Img = new Image();
+  player3Img.src = 'player3.png';
   playerImg = player1Img;
 
   // inputs
@@ -163,7 +165,8 @@ function init() {
 
   playerBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      playerImg = btn.dataset.player === 'player2' ? player2Img : player1Img;
+      const name = btn.dataset.player;
+      playerImg = name === 'player2' ? player2Img : name === 'player3' ? player3Img : player1Img;
       playerBtns.forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
     });
@@ -503,16 +506,19 @@ function drawVases() {
 }
 
 function drawVase(b) {
+  // draw walls outside the physical boundaries so balls stay visibly inside
   const half = b.width / 2;
   const top = b.y - b.height;
+  const t = 20;
+  const offset = t / 2;
   ctx.beginPath();
-  ctx.moveTo(b.x - half, top);
-  ctx.lineTo(b.x - half, b.y);
-  ctx.lineTo(b.x + half, b.y);
-  ctx.lineTo(b.x + half, top);
+  ctx.moveTo(b.x - half - offset, top - offset);
+  ctx.lineTo(b.x - half - offset, b.y + offset);
+  ctx.lineTo(b.x + half + offset, b.y + offset);
+  ctx.lineTo(b.x + half + offset, top - offset);
   ctx.stroke();
   ctx.fillStyle = 'rgba(255,255,255,0.1)';
-  ctx.fillRect(b.x - half + 10, top, b.width - 20, b.height);
+  ctx.fillRect(b.x - half, top, b.width, b.height);
 }
 
 function drawLabels() {
