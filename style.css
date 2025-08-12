@@ -4,6 +4,7 @@ body {
   font-family: 'Press Start 2P', monospace;
   background: #001f3f;
   color: #fff;
+  position: relative;
 }
 
 #menu {
@@ -65,4 +66,35 @@ button:focus {
     transparent 2px,
     transparent 3px
   );
+}
+
+#title {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 32px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+#winOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Press Start 2P', monospace;
+  color: #fff;
+  z-index: 20;
+}
+
+#winOverlay.show {
+  display: flex;
 }

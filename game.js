@@ -13,16 +13,32 @@ const WIDTH = 1024;
 const HEIGHT = 576;
 const BARREL_LEN = 60;
 const BALL_RADIUS = 8;
-const BASE_COUNT = 250;
-const PREFILL_COUNT = 250;
 const CANNON_X = 900;
 const CANNON_Y = 420;
-const LEFT_BUCKET = { x: 220, y: 480, width: 260, height: 260 };
-const RIGHT_BUCKET = { x: 600, y: 500, width: 380, height: 380 };
+const LEFT_BUCKET = { x: 220, y: 500, width: 260, height: 260 };
+const RIGHT_BUCKET = { x: 560, y: 510, width: 380, height: 380 };
+
+// configure colours
+const COLORS = {
+  blue: '#277da1',
+  yellow: '#f9c74f',
+  green: '#90be6d',
+  red: '#f94144',
+  orange: '#f3722c'
+};
+
+// initial balls per bucket (customize as desired)
+const INITIAL_BALLS = {
+  left: { blue: 50, yellow: 50, green: 50, red: 50, orange: 50 },
+  right: { blue: 50, yellow: 50, green: 50, red: 50, orange: 50 }
+};
+
+const WIN_COUNT = 500;
 
 // State
 let caughtCount = 0;
 let newCaughtCount = 0;
+let baseCount = 0;
 const countedIds = new Set();
 const balls = [];
 let engine, world, runner, sensor;
@@ -35,7 +51,7 @@ let chargePower = 0;
 let armUpTicks = 0;
 
 // DOM refs
-let canvas, ctx, stage;
+let canvas, ctx, stage, winOverlay, relaunchBtn;
 let ballsInput, colorInput, angleInput, powerInput, shootBtn, autoBtn, resetBtn;
 const leftPrefill = [];
 const rightPrefill = [];
@@ -80,6 +96,9 @@ function init() {
   ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
   stage = document.getElementById('stage');
+  winOverlay = document.getElementById('winOverlay');
+  relaunchBtn = document.getElementById('relaunchBtn');
+  relaunchBtn.addEventListener('click', () => window.location.reload());
 
   playerImg = new Image();
   playerImg.src = 'player.png';
@@ -154,28 +173,39 @@ function setupPhysics() {
 }
 
 function prefillBuckets() {
-  prefillBucket(leftPrefill, LEFT_BUCKET, PREFILL_COUNT);
-  prefillBucket(rightPrefill, RIGHT_BUCKET, PREFILL_COUNT);
+  prefillBucket(leftPrefill, LEFT_BUCKET, INITIAL_BALLS.left);
+  baseCount = prefillBucket(rightPrefill, RIGHT_BUCKET, INITIAL_BALLS.right);
 }
 
-function prefillBucket(arr, bucket, count) {
+function prefillBucket(arr, bucket, config) {
   arr.length = 0;
-  const cols = Math.floor(bucket.width / (BALL_RADIUS * 2));
-  const rows = Math.floor(bucket.height / (BALL_RADIUS * 2));
-  const startX = bucket.x - bucket.width / 2 + BALL_RADIUS;
-  const startY = bucket.y - BALL_RADIUS;
+  const entries = [];
+  for (const [name, count] of Object.entries(config)) {
+    for (let i = 0; i < count; i++) entries.push(name);
+  }
+  const cols = Math.floor((bucket.width - 20) / (BALL_RADIUS * 2));
+  const rows = Math.floor((bucket.height - 20) / (BALL_RADIUS * 2));
+  const startX = bucket.x - (bucket.width - 20) / 2 + BALL_RADIUS;
+  const startY = bucket.y - BALL_RADIUS - 10;
   let placed = 0;
-  for (let r = 0; r < rows && placed < count; r++) {
-    for (let c = 0; c < cols && placed < count; c++) {
+  for (let r = 0; r < rows && placed < entries.length; r++) {
+    for (let c = 0; c < cols && placed < entries.length; c++) {
+      const colorName = entries[placed];
       const x = startX + c * BALL_RADIUS * 2;
       const y = startY - r * BALL_RADIUS * 2;
-      const body = Bodies.circle(x, y, BALL_RADIUS, { isStatic: true });
-      body.renderColor = randomColor();
+      const body = Bodies.circle(x, y, BALL_RADIUS, {
+        restitution: 0.6,
+        friction: 0.05,
+        frictionAir: 0.01,
+        density: 0.001
+      });
+      body.renderColor = COLORS[colorName];
       World.add(world, body);
       arr.push(body);
       placed++;
     }
   }
+  return placed;
 }
 
 function handleCatch(ball) {
@@ -184,6 +214,9 @@ function handleCatch(ball) {
   caughtCount++;
   newCaughtCount++;
   playDing();
+  if (baseCount + caughtCount >= WIN_COUNT) {
+    showWin();
+  }
 }
 
 // create vase and return sensor if requested
@@ -340,11 +373,11 @@ function render() {
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
   drawBounds();
+  drawBalls();
   drawPrefilledBalls(leftPrefill);
   drawPrefilledBalls(rightPrefill);
   drawVases();
   drawLabels();
-  drawBalls();
   drawCannon();
   drawCharacter();
 
@@ -383,8 +416,8 @@ function drawLabels() {
   ctx.textAlign = 'center';
   const leftTop = LEFT_BUCKET.y - LEFT_BUCKET.height;
   const rightTop = RIGHT_BUCKET.y - RIGHT_BUCKET.height;
-  ctx.fillText('Baseline: ' + BASE_COUNT, LEFT_BUCKET.x, leftTop - 20);
-  ctx.fillText('Total: ' + (BASE_COUNT + caughtCount), RIGHT_BUCKET.x, rightTop - 20);
+  ctx.fillText('Baseline: ' + baseCount, LEFT_BUCKET.x, leftTop - 20);
+  ctx.fillText('Total: ' + (baseCount + caughtCount), RIGHT_BUCKET.x, rightTop - 20);
   ctx.fillText('(+' + newCaughtCount + ')', RIGHT_BUCKET.x, rightTop - 40);
 }
 
@@ -425,6 +458,15 @@ function drawCharacter() {
   const baseY = CANNON_Y + 20;
   const offsetY = armUpTicks > 0 ? -8 : 0;
   ctx.drawImage(playerImg, centerX - imgW / 2, baseY - imgH + offsetY, imgW, imgH);
+}
+
+function showWin() {
+  if (winOverlay) winOverlay.classList.add('show');
+  if (autoInterval) {
+    clearInterval(autoInterval);
+    autoInterval = null;
+    if (autoBtn) autoBtn.textContent = 'AUTO-FIRE';
+  }
 }
 
 // start
