@@ -17,8 +17,8 @@ const BASE_COUNT = 250;
 const PREFILL_COUNT = 250;
 const CANNON_X = 900;
 const CANNON_Y = 420;
-const LEFT_BUCKET = { x: 220, y: 420, width: 260, height: 260 };
-const RIGHT_BUCKET = { x: 600, y: 420, width: 380, height: 380 };
+const LEFT_BUCKET = { x: 220, y: 480, width: 260, height: 260 };
+const RIGHT_BUCKET = { x: 600, y: 500, width: 380, height: 380 };
 
 // State
 let caughtCount = 0;
@@ -26,6 +26,7 @@ let newCaughtCount = 0;
 const countedIds = new Set();
 const balls = [];
 let engine, world, runner, sensor;
+let playerImg;
 let angleDeg = 135;
 let powerPct = 60;
 let autoInterval = null;
@@ -79,6 +80,9 @@ function init() {
   ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
   stage = document.getElementById('stage');
+
+  playerImg = new Image();
+  playerImg.src = 'player.png';
 
   // inputs
   ballsInput = document.getElementById('ballsInput');
@@ -414,27 +418,13 @@ function drawCannon() {
 }
 
 function drawCharacter() {
-  const x = CANNON_X - 50;
-  const y = CANNON_Y;
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(x, y - 30, 10, 0, Math.PI * 2); // head
-  ctx.moveTo(x, y - 20);
-  ctx.lineTo(x, y + 20); // body
-  ctx.moveTo(x, y);
-  ctx.lineTo(x - 15, y + 25); // left leg
-  ctx.moveTo(x, y);
-  ctx.lineTo(x + 15, y + 25); // right leg
-  // arms
-  if (armUpTicks > 0) {
-    ctx.moveTo(x, y - 10);
-    ctx.lineTo(x + 20, y - 30);
-  } else {
-    ctx.moveTo(x, y - 10);
-    ctx.lineTo(x + 25, y + 5);
-  }
-  ctx.stroke();
+  if (!playerImg || !playerImg.complete) return;
+  const imgW = 80;
+  const imgH = 80;
+  const centerX = CANNON_X - 50;
+  const baseY = CANNON_Y + 20;
+  const offsetY = armUpTicks > 0 ? -8 : 0;
+  ctx.drawImage(playerImg, centerX - imgW / 2, baseY - imgH + offsetY, imgW, imgH);
 }
 
 // start

@@ -42,7 +42,6 @@ button:focus {
   position: relative;
   aspect-ratio: 16 / 9;
   image-rendering: pixelated;
-  max-width: 900px;
 }
 
 #game {
