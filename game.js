@@ -21,7 +21,9 @@ const BALL_RADIUS = 8;
 const CANNON_X = 900;
 const CANNON_Y = 420;
 // bucket positions with unified baseline so they "stand" on same ground line
-const BUCKET_BASELINE_Y = 540; // bottom y for both buckets
+// Align buckets so their stroke (20px) sits visually ON the ground line (frame bottom). We raise by full half-thickness.
+// frame bottom = HEIGHT - 40; bucket stroke extends 10px beyond path; so offset path by 10px upward.
+const BUCKET_BASELINE_Y = HEIGHT - 40 - 10 - 10; // subtract wall thickness (20) for clean separation
 const LEFT_BUCKET = { x: 230, y: BUCKET_BASELINE_Y, width: 225, height: 225 };
 const RIGHT_BUCKET = { x: 600, y: BUCKET_BASELINE_Y, width: 333, height: 333 };
 
@@ -520,14 +522,18 @@ function drawVase(b) {
   const top = b.y - b.height;
   const t = 20;
   const offset = t / 2;
+  const frameBottom = HEIGHT - 40; // bottom line of outer frame
+  const bottomY = frameBottom - offset; // raise path so stroke edge sits on frame line
   ctx.beginPath();
   ctx.moveTo(b.x - half - offset, top - offset);
-  ctx.lineTo(b.x - half - offset, b.y + offset);
-  ctx.lineTo(b.x + half + offset, b.y + offset);
+  ctx.lineTo(b.x - half - offset, bottomY);
+  ctx.lineTo(b.x + half + offset, bottomY);
   ctx.lineTo(b.x + half + offset, top - offset);
   ctx.stroke();
   ctx.fillStyle = 'rgba(255,255,255,0.1)';
-  ctx.fillRect(b.x - half, top, b.width, b.height);
+  // Adjust fill height so interior ends at the visual bottom line
+  const adjustedHeight = (frameBottom - offset) - top; // interior fill stops above frame line
+  ctx.fillRect(b.x - half, top, b.width, adjustedHeight);
 }
 
 function drawLabels() {
@@ -553,28 +559,79 @@ function drawBalls() {
 
 function drawCannon() {
   const angle = angleDeg * Math.PI / 180;
-  ctx.fillStyle = '#fff';
-  // base
+
+  // Retro pedestal base -------------------------------------------------
+  const baseW = 74;
+  const baseH = 26;
+  const baseX = CANNON_X - baseW / 2;
+  const baseY = CANNON_Y + 18; // slightly below pivot
+  // base shadow
+  ctx.fillStyle = '#091b2b';
+  ctx.fillRect(baseX, baseY, baseW, baseH);
+  // mid layer
+  ctx.fillStyle = '#12324b';
+  ctx.fillRect(baseX + 2, baseY + 2, baseW - 4, baseH - 6);
+  // top plate
+  ctx.fillStyle = '#1d4f72';
+  ctx.fillRect(baseX + 4, baseY + 4, baseW - 8, baseH - 10);
+  // highlight line
+  ctx.fillStyle = '#5db3ff';
+  ctx.fillRect(baseX + 4, baseY + 4, baseW - 8, 2);
+
+  // Pivot ring ----------------------------------------------------------
   ctx.beginPath();
-  ctx.arc(CANNON_X, CANNON_Y, 20, 0, Math.PI * 2);
+  ctx.fillStyle = '#d9ecff';
+  ctx.arc(CANNON_X, CANNON_Y, 18, 0, Math.PI * 2);
   ctx.fill();
-  // barrel
+  ctx.beginPath();
+  ctx.fillStyle = '#0d2030';
+  ctx.arc(CANNON_X, CANNON_Y, 12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.fillStyle = '#ffffff';
+  ctx.arc(CANNON_X, CANNON_Y, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Barrel with layered shading ----------------------------------------
+  const recoil = armUpTicks > 0 ? 4 : 0; // subtle recoil extension
+  const barrelLen = BARREL_LEN + recoil;
   ctx.save();
   ctx.translate(CANNON_X, CANNON_Y);
   ctx.rotate(-angle);
-  ctx.fillRect(0, -5, BARREL_LEN, 10);
+  const barrelH = 16;
+  // outer frame
+  ctx.fillStyle = '#0d2030';
+  ctx.fillRect(0, -barrelH / 2, barrelLen, barrelH);
+  // inner gradient (manual stripes for pixel feel)
+  const stripeW = barrelLen;
+  ctx.fillStyle = '#1c3b55';
+  ctx.fillRect(2, -barrelH / 2 + 2, stripeW - 4, barrelH - 4);
+  ctx.fillStyle = '#2c5d82';
+  ctx.fillRect(2, -barrelH / 2 + 2, stripeW - 4, 4);
+  ctx.fillStyle = '#163048';
+  ctx.fillRect(2, barrelH / 2 - 6, stripeW - 4, 4);
+  // muzzle ring
+  ctx.fillStyle = '#5db3ff';
+  ctx.fillRect(barrelLen - 8, -barrelH / 2 + 2, 6, barrelH - 4);
   ctx.restore();
-  // muzzle mark
+
+  // Muzzle tip indicator
   ctx.beginPath();
-  ctx.arc(CANNON_X + Math.cos(angle) * BARREL_LEN, CANNON_Y - Math.sin(angle) * BARREL_LEN, 3, 0, Math.PI * 2);
+  ctx.fillStyle = '#d9ecff';
+  ctx.arc(CANNON_X + Math.cos(angle) * barrelLen, CANNON_Y - Math.sin(angle) * barrelLen, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.fillStyle = '#5db3ff';
+  ctx.arc(CANNON_X + Math.cos(angle) * barrelLen, CANNON_Y - Math.sin(angle) * barrelLen, 2, 0, Math.PI * 2);
   ctx.fill();
 
-  // angle & power labels
+  // Angle & power labels ------------------------------------------------
   ctx.font = '12px "Press Start 2P"';
   ctx.textAlign = 'center';
   const displayAngle = 180 - angleDeg;
-  ctx.fillText(Math.round(displayAngle) + '\u00B0', CANNON_X, CANNON_Y + 40);
-  ctx.fillText('P ' + Math.round(powerPct) + '%', CANNON_X, CANNON_Y + 56);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(Math.round(displayAngle) + '\u00B0', CANNON_X, CANNON_Y + 46);
+  ctx.fillText('P ' + Math.round(powerPct) + '%', CANNON_X, CANNON_Y + 62);
 }
 
 function drawCharacter() {
