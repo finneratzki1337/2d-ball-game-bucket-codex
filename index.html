@@ -15,19 +15,19 @@
       <input id="ballsInput" type="number" min="1" max="200" value="4" />
     </label>
     <label>Color
-      <select id="colorInput">
-        <option value="red" selected>Red</option>
-        <option value="blue">Blue</option>
-        <option value="yellow">Yellow</option>
-        <option value="green">Green</option>
-        <option value="orange">Orange</option>
-      </select>
+      <div id="colorButtons" class="color-buttons">
+        <button class="color-btn selected" data-color="red" style="background:#f94144" title="Red"></button>
+        <button class="color-btn" data-color="blue" style="background:#277da1" title="Blue"></button>
+        <button class="color-btn" data-color="yellow" style="background:#f9c74f" title="Yellow"></button>
+        <button class="color-btn" data-color="green" style="background:#90be6d" title="Green"></button>
+        <button class="color-btn" data-color="orange" style="background:#f3722c" title="Orange"></button>
+      </div>
     </label>
     <label>Player
-      <select id="playerSelect">
-        <option value="player1" selected>Player 1</option>
-        <option value="player2">Player 2</option>
-      </select>
+      <div id="playerButtons" class="player-buttons">
+        <button class="player-btn selected" data-player="player1"><img src="player.png" alt="Player 1" /></button>
+        <button class="player-btn" data-player="player2"><img src="player2.png" alt="Player 2" /></button>
+      </div>
     </label>
     <label>Angle
       <input id="angleInput" type="range" min="10" max="170" value="45" />
@@ -38,13 +38,29 @@
     <button id="shootBtn">SHOOT</button>
     <button id="autoBtn">AUTO-FIRE</button>
     <button id="resetBtn">RESET</button>
+    <label>Delete Balls
+      <div id="deleteColorButtons" class="color-buttons">
+        <button class="color-btn selected" data-color="red" style="background:#f94144" title="Red"></button>
+        <button class="color-btn" data-color="blue" style="background:#277da1" title="Blue"></button>
+        <button class="color-btn" data-color="yellow" style="background:#f9c74f" title="Yellow"></button>
+        <button class="color-btn" data-color="green" style="background:#90be6d" title="Green"></button>
+        <button class="color-btn" data-color="orange" style="background:#f3722c" title="Orange"></button>
+      </div>
+      <input id="deleteCountInput" type="number" min="1" max="200" value="1" />
+      <button id="deleteBtn">DELETE</button>
+    </label>
   </aside>
   <div id="stage">
     <canvas id="game" width="1024" height="576"></canvas>
   </div>
+  <div id="stats">
+    <div id="leftStats"></div>
+    <div id="rightStats"></div>
+  </div>
   <div id="winOverlay">
     <h2>GAME WON</h2>
-    <button id="relaunchBtn">RELAUNCH</button>
+    <button id="relaunchBtn">RESET</button>
+    <button id="continueBtn">CONTINUE</button>
   </div>
 </body>
 </html>

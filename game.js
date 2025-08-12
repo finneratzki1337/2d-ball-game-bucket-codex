@@ -28,11 +28,8 @@ const COLORS = {
   orange: '#f3722c'
 };
 
-// initial balls per bucket (customize as desired)
-const INITIAL_BALLS = {
-  left: { blue: 50, yellow: 50, green: 50, red: 50, orange: 50 },
-  right: { blue: 50, yellow: 50, green: 50, red: 50, orange: 50 }
-};
+// initial balls for both buckets
+const PREFILL_BALLS = { blue: 50, yellow: 50, green: 50, red: 50, orange: 50 };
 
 const WIN_COUNT = 500;
 
@@ -42,6 +39,8 @@ let newCaughtCount = 0;
 let baseCount = 0;
 const countedIds = new Set();
 const balls = [];
+const caughtBalls = [];
+const pops = [];
 let engine, world, runner, sensor;
 let playerImg, player1Img, player2Img;
 let angleDeg = 135;
@@ -50,10 +49,14 @@ let autoInterval = null;
 let charging = false;
 let chargePower = 0;
 let armUpTicks = 0;
+let selectedColor = 'red';
+let selectedDeleteColor = 'red';
+let currentBatch = 0;
 
 // DOM refs
-let canvas, ctx, stage, winOverlay, relaunchBtn;
-let ballsInput, colorInput, playerSelect, angleInput, powerInput, shootBtn, autoBtn, resetBtn;
+let canvas, ctx, stage, winOverlay, relaunchBtn, continueBtn;
+let ballsInput, angleInput, powerInput, shootBtn, autoBtn, resetBtn, deleteCountInput, deleteBtn;
+let colorBtns, deleteColorBtns, playerBtns, leftStatsEl, rightStatsEl;
 const leftPrefill = [];
 const rightPrefill = [];
 
@@ -99,7 +102,9 @@ function init() {
   stage = document.getElementById('stage');
   winOverlay = document.getElementById('winOverlay');
   relaunchBtn = document.getElementById('relaunchBtn');
+  continueBtn = document.getElementById('continueBtn');
   relaunchBtn.addEventListener('click', () => window.location.reload());
+  continueBtn.addEventListener('click', () => winOverlay.classList.remove('show'));
 
   player1Img = new Image();
   player1Img.src = 'player.png';
@@ -109,13 +114,18 @@ function init() {
 
   // inputs
   ballsInput = document.getElementById('ballsInput');
-  colorInput = document.getElementById('colorInput');
-  playerSelect = document.getElementById('playerSelect');
   angleInput = document.getElementById('angleInput');
   powerInput = document.getElementById('powerInput');
   shootBtn = document.getElementById('shootBtn');
   autoBtn = document.getElementById('autoBtn');
   resetBtn = document.getElementById('resetBtn');
+  deleteCountInput = document.getElementById('deleteCountInput');
+  deleteBtn = document.getElementById('deleteBtn');
+  colorBtns = document.querySelectorAll('#colorButtons .color-btn');
+  deleteColorBtns = document.querySelectorAll('#deleteColorButtons .color-btn');
+  playerBtns = document.querySelectorAll('#playerButtons .player-btn');
+  leftStatsEl = document.getElementById('leftStats');
+  rightStatsEl = document.getElementById('rightStats');
 
   angleInput.addEventListener('input', () => setAngleFromInput(angleInput.value));
   powerInput.addEventListener('input', () => setPower(powerInput.value));
@@ -123,16 +133,41 @@ function init() {
     let v = clamp(+ballsInput.value, 1, 200);
     ballsInput.value = v;
   });
-  playerSelect.addEventListener('change', () => {
-    playerImg = playerSelect.value === 'player2' ? player2Img : player1Img;
+
+  colorBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedColor = btn.dataset.color;
+      colorBtns.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+
+  deleteColorBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedDeleteColor = btn.dataset.color;
+      deleteColorBtns.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+
+  playerBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      playerImg = btn.dataset.player === 'player2' ? player2Img : player1Img;
+      playerBtns.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
   });
 
   shootBtn.addEventListener('click', () => {
-    newCaughtCount = 0;
     fire(+ballsInput.value);
   });
   autoBtn.addEventListener('click', toggleAuto);
   resetBtn.addEventListener('click', resetGame);
+  deleteBtn.addEventListener('click', () => {
+    const num = clamp(+deleteCountInput.value, 1, 200);
+    deleteCountInput.value = num;
+    deleteBalls(selectedDeleteColor, num);
+  });
 
   document.addEventListener('keydown', handleKeyDown);
   document.addEventListener('keyup', handleKeyUp);
@@ -183,8 +218,8 @@ function setupPhysics() {
 }
 
 function prefillBuckets() {
-  prefillBucket(leftPrefill, LEFT_BUCKET, INITIAL_BALLS.left);
-  baseCount = prefillBucket(rightPrefill, RIGHT_BUCKET, INITIAL_BALLS.right);
+  prefillBucket(leftPrefill, LEFT_BUCKET, PREFILL_BALLS);
+  baseCount = prefillBucket(rightPrefill, RIGHT_BUCKET, PREFILL_BALLS);
 }
 
 function prefillBucket(arr, bucket, config) {
@@ -210,6 +245,7 @@ function prefillBucket(arr, bucket, config) {
         density: 0.001
       });
       body.renderColor = COLORS[colorName];
+      body.colorName = colorName;
       World.add(world, body);
       arr.push(body);
       placed++;
@@ -223,6 +259,7 @@ function handleCatch(ball) {
   countedIds.add(ball.id);
   caughtCount++;
   newCaughtCount++;
+  caughtBalls.push({ body: ball, color: ball.colorName, batch: currentBatch });
   playDing();
   if (baseCount + caughtCount >= WIN_COUNT) {
     showWin();
@@ -258,8 +295,41 @@ function drawPrefilledBalls(arr) {
   });
 }
 
+function deleteBalls(colorName, num) {
+  let removed = 0;
+  for (let i = caughtBalls.length - 1; i >= 0 && removed < num; i--) {
+    const cb = caughtBalls[i];
+    if (cb.color === colorName) {
+      removeBall(cb.body);
+      caughtBalls.splice(i, 1);
+      removed++;
+      caughtCount--;
+      countedIds.delete(cb.body.id);
+      if (cb.batch === currentBatch && newCaughtCount > 0) newCaughtCount--;
+    }
+  }
+  for (let i = rightPrefill.length - 1; i >= 0 && removed < num; i--) {
+    const b = rightPrefill[i];
+    if (b.colorName === colorName) {
+      removeBall(b);
+      rightPrefill.splice(i, 1);
+      removed++;
+      baseCount--;
+    }
+  }
+}
+
+function removeBall(b) {
+  pops.push({ x: b.position.x, y: b.position.y, color: b.renderColor, life: 10 });
+  World.remove(world, b);
+  const idx = balls.indexOf(b);
+  if (idx >= 0) balls.splice(idx, 1);
+}
+
 function fire(n) {
   n = clamp(n, 1, 200);
+  currentBatch++;
+  newCaughtCount = 0;
   for (let i = 0; i < n; i++) {
     setTimeout(() => fireOne(), i * 70);
   }
@@ -267,7 +337,8 @@ function fire(n) {
 
 function fireOne(powerScale = 1) {
   const angle = angleDeg * Math.PI / 180;
-  const color = COLORS[colorInput.value];
+  const colorName = selectedColor;
+  const color = COLORS[colorName];
   const speed = powerToVelocity(powerPct * powerScale);
   const muzzle = {
     x: CANNON_X + Math.cos(angle) * BARREL_LEN,
@@ -284,6 +355,7 @@ function fireOne(powerScale = 1) {
     density: 0.001
   });
   ball.renderColor = color;
+  ball.colorName = colorName;
   Body.setVelocity(ball, { x: Math.cos(angle) * speed, y: -Math.sin(angle) * speed });
   balls.push(ball);
   World.add(world, ball);
@@ -319,6 +391,8 @@ function toggleAuto() {
 function resetGame() {
   balls.forEach(b => World.remove(world, b));
   balls.length = 0;
+  caughtBalls.length = 0;
+  pops.length = 0;
   countedIds.clear();
   caughtCount = 0;
   newCaughtCount = 0;
@@ -391,10 +465,13 @@ function render() {
   drawBalls();
   drawPrefilledBalls(leftPrefill);
   drawPrefilledBalls(rightPrefill);
+  drawPops();
   drawVases();
   drawLabels();
   drawCannon();
   drawCharacter();
+
+  updateStats();
 
   requestAnimationFrame(render);
 }
@@ -480,6 +557,41 @@ function drawCharacter() {
   const baseY = CANNON_Y + 20;
   const offsetY = armUpTicks > 0 ? -8 : 0;
   ctx.drawImage(playerImg, centerX - imgW / 2, baseY - imgH + offsetY, imgW, imgH);
+}
+
+function drawPops() {
+  for (let i = pops.length - 1; i >= 0; i--) {
+    const p = pops[i];
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, BALL_RADIUS * (1 + (10 - p.life) / 5), 0, Math.PI * 2);
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    p.life--;
+    if (p.life <= 0) pops.splice(i, 1);
+  }
+}
+
+function updateStats() {
+  if (!leftStatsEl || !rightStatsEl) return;
+  const leftCounts = countColors(leftPrefill);
+  const rightCounts = countColors(rightPrefill.concat(caughtBalls.map(cb => cb.body)));
+  leftStatsEl.textContent = formatPercentages(leftCounts, 'Left');
+  rightStatsEl.textContent = formatPercentages(rightCounts, 'Right');
+}
+
+function countColors(arr) {
+  const counts = { red: 0, blue: 0, yellow: 0, green: 0, orange: 0 };
+  arr.forEach(b => counts[b.colorName]++);
+  return counts;
+}
+
+function formatPercentages(counts, label) {
+  const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+  const parts = Object.entries(counts)
+    .filter(([, v]) => v > 0)
+    .map(([c, v]) => Math.round((v / total) * 100) + '% ' + c);
+  return label + ': ' + parts.join(', ');
 }
 
 function showWin() {
