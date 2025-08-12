@@ -15,9 +15,9 @@ const BARREL_LEN = 60;
 const BALL_RADIUS = 8;
 const CANNON_X = 900;
 const CANNON_Y = 420;
-// bucket positions (15% smaller than before and spaced out)
-const LEFT_BUCKET = { x: 200, y: 520, width: 221, height: 221 };
-const RIGHT_BUCKET = { x: 600, y: 530, width: 323, height: 323 };
+// bucket positions (slightly bigger to avoid overlap)
+const LEFT_BUCKET = { x: 200, y: 520, width: 228, height: 228 };
+const RIGHT_BUCKET = { x: 600, y: 530, width: 333, height: 333 };
 
 // configure colours
 const COLORS = {
@@ -28,8 +28,19 @@ const COLORS = {
   orange: '#f3722c'
 };
 
-// initial balls for both buckets
-const PREFILL_BALLS = { blue: 50, yellow: 50, green: 50, red: 50, orange: 50 };
+// initial balls for both buckets (edit these values to change starting distribution)
+const INITIAL_BLUE = 120;
+const INITIAL_RED = 50;
+const INITIAL_GREEN = 20;
+const INITIAL_ORANGE = 40;
+const INITIAL_YELLOW = 20;
+const PREFILL_BALLS = {
+  blue: INITIAL_BLUE,
+  red: INITIAL_RED,
+  green: INITIAL_GREEN,
+  orange: INITIAL_ORANGE,
+  yellow: INITIAL_YELLOW
+};
 
 const WIN_COUNT = 500;
 
@@ -228,10 +239,11 @@ function prefillBucket(arr, bucket, config) {
   for (const [name, count] of Object.entries(config)) {
     for (let i = 0; i < count; i++) entries.push(name);
   }
-  const cols = Math.floor((bucket.width - 20) / (BALL_RADIUS * 2));
-  const rows = Math.floor((bucket.height - 20) / (BALL_RADIUS * 2));
-  const startX = bucket.x - (bucket.width - 20) / 2 + BALL_RADIUS;
-  const startY = bucket.y - BALL_RADIUS - 10;
+  const margin = BALL_RADIUS + 12;
+  const cols = Math.floor((bucket.width - margin * 2) / (BALL_RADIUS * 2));
+  const rows = Math.floor((bucket.height - margin * 2) / (BALL_RADIUS * 2));
+  const startX = bucket.x - bucket.width / 2 + margin + BALL_RADIUS;
+  const startY = bucket.y - margin - BALL_RADIUS;
   let placed = 0;
   for (let r = 0; r < rows && placed < entries.length; r++) {
     for (let c = 0; c < cols && placed < entries.length; c++) {
@@ -295,6 +307,7 @@ function drawPrefilledBalls(arr) {
   });
 }
 
+// remove balls only from the right bucket
 function deleteBalls(colorName, num) {
   let removed = 0;
   for (let i = caughtBalls.length - 1; i >= 0 && removed < num; i--) {
@@ -587,11 +600,12 @@ function countColors(arr) {
 }
 
 function formatPercentages(counts, label) {
-  const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  if (total === 0) return `${label} (0):`;
   const parts = Object.entries(counts)
     .filter(([, v]) => v > 0)
-    .map(([c, v]) => Math.round((v / total) * 100) + '% ' + c);
-  return label + ': ' + parts.join(', ');
+    .map(([c, v]) => `${Math.round((v / total) * 100)}% ${c} (${v})`);
+  return `${label} (${total}): ${parts.join(', ')}`;
 }
 
 function showWin() {
