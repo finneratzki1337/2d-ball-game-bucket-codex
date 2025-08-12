@@ -12,9 +12,13 @@ const Runner = Matter.Runner;
 const WIDTH = 1024;
 const HEIGHT = 576;
 const BARREL_LEN = 60;
-const BALL_RADIUS = 9;
+const BALL_RADIUS = 8;
 const BASE_COUNT = 250;
 const PREFILL_COUNT = 250;
+const CANNON_X = 900;
+const CANNON_Y = 420;
+const LEFT_BUCKET = { x: 220, y: 420, width: 260, height: 260 };
+const RIGHT_BUCKET = { x: 600, y: 420, width: 380, height: 380 };
 
 // State
 let caughtCount = 0;
@@ -132,8 +136,8 @@ function setupPhysics() {
   World.add(world, [ground, ceiling, leftWall, rightWall]);
 
   // vases
-  makeVase(220, 420, 260, 260, false); // left bucket
-  sensor = makeVase(600, 380, 360, 300, true); // large bucket with sensor
+  makeVase(LEFT_BUCKET.x, LEFT_BUCKET.y, LEFT_BUCKET.width, LEFT_BUCKET.height, false); // left bucket
+  sensor = makeVase(RIGHT_BUCKET.x, RIGHT_BUCKET.y, RIGHT_BUCKET.width, RIGHT_BUCKET.height, true); // large bucket with sensor
 
   // collision for sensor
   Events.on(engine, 'collisionStart', evt => {
@@ -146,20 +150,27 @@ function setupPhysics() {
 }
 
 function prefillBuckets() {
-  leftPrefill.length = 0;
-  rightPrefill.length = 0;
-  for (let i = 0; i < PREFILL_COUNT; i++) {
-    const color = randomColor();
-    leftPrefill.push({
-      x: randomRange(90 + BALL_RADIUS, 350 - BALL_RADIUS),
-      y: randomRange(160 + BALL_RADIUS, 420 - BALL_RADIUS),
-      color
-    });
-    rightPrefill.push({
-      x: randomRange(420 + BALL_RADIUS, 780 - BALL_RADIUS),
-      y: randomRange(380 - BALL_RADIUS - 150, 380 - BALL_RADIUS),
-      color
-    });
+  prefillBucket(leftPrefill, LEFT_BUCKET, PREFILL_COUNT);
+  prefillBucket(rightPrefill, RIGHT_BUCKET, PREFILL_COUNT);
+}
+
+function prefillBucket(arr, bucket, count) {
+  arr.length = 0;
+  const cols = Math.floor(bucket.width / (BALL_RADIUS * 2));
+  const rows = Math.floor(bucket.height / (BALL_RADIUS * 2));
+  const startX = bucket.x - bucket.width / 2 + BALL_RADIUS;
+  const startY = bucket.y - BALL_RADIUS;
+  let placed = 0;
+  for (let r = 0; r < rows && placed < count; r++) {
+    for (let c = 0; c < cols && placed < count; c++) {
+      const x = startX + c * BALL_RADIUS * 2;
+      const y = startY - r * BALL_RADIUS * 2;
+      const body = Bodies.circle(x, y, BALL_RADIUS, { isStatic: true });
+      body.renderColor = randomColor();
+      World.add(world, body);
+      arr.push(body);
+      placed++;
+    }
   }
 }
 
@@ -194,8 +205,8 @@ function makeVase(x, y, innerW, innerH, withSensor) {
 function drawPrefilledBalls(arr) {
   arr.forEach(b => {
     ctx.beginPath();
-    ctx.arc(b.x, b.y, BALL_RADIUS, 0, Math.PI * 2);
-    ctx.fillStyle = b.color;
+    ctx.arc(b.position.x, b.position.y, BALL_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = b.renderColor;
     ctx.fill();
   });
 }
@@ -212,8 +223,8 @@ function fireOne(powerScale = 1) {
   const color = colorInput.value;
   const speed = powerToVelocity(powerPct * powerScale);
   const muzzle = {
-    x: 820 + Math.cos(angle) * BARREL_LEN,
-    y: 420 - Math.sin(angle) * BARREL_LEN
+    x: CANNON_X + Math.cos(angle) * BARREL_LEN,
+    y: CANNON_Y - Math.sin(angle) * BARREL_LEN
   };
   const spawn = {
     x: muzzle.x + Math.cos(angle) * (BALL_RADIUS + 2),
@@ -312,10 +323,6 @@ function randomColor() {
   return palette[Math.floor(Math.random() * palette.length)];
 }
 
-function randomRange(min, max) {
-  return Math.random() * (max - min) + min;
-}
-
 function render() {
   const dt = engine.timing.delta;
   if (charging) {
@@ -349,34 +356,32 @@ function drawBounds() {
 function drawVases() {
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 20;
-  // left bucket
-  ctx.beginPath();
-  ctx.moveTo(90, 160);
-  ctx.lineTo(90, 420);
-  ctx.lineTo(350, 420);
-  ctx.lineTo(350, 160);
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.1)';
-  ctx.fillRect(100, 160, 260 - 20, 260);
+  drawVase(LEFT_BUCKET);
+  drawVase(RIGHT_BUCKET);
+}
 
-  // right bucket
+function drawVase(b) {
+  const half = b.width / 2;
+  const top = b.y - b.height;
   ctx.beginPath();
-  ctx.moveTo(420, 80);
-  ctx.lineTo(420, 380);
-  ctx.lineTo(780, 380);
-  ctx.lineTo(780, 80);
+  ctx.moveTo(b.x - half, top);
+  ctx.lineTo(b.x - half, b.y);
+  ctx.lineTo(b.x + half, b.y);
+  ctx.lineTo(b.x + half, top);
   ctx.stroke();
   ctx.fillStyle = 'rgba(255,255,255,0.1)';
-  ctx.fillRect(430, 80, 360 - 20, 300);
+  ctx.fillRect(b.x - half + 10, top, b.width - 20, b.height);
 }
 
 function drawLabels() {
   ctx.fillStyle = '#fff';
   ctx.font = '16px "Press Start 2P"';
   ctx.textAlign = 'center';
-  ctx.fillText('2024', 220, 480);
-  ctx.fillText('Total: ' + (BASE_COUNT + caughtCount), 600, 420);
-  ctx.fillText('(+' + newCaughtCount + ')', 600, 440);
+  const leftTop = LEFT_BUCKET.y - LEFT_BUCKET.height;
+  const rightTop = RIGHT_BUCKET.y - RIGHT_BUCKET.height;
+  ctx.fillText('Baseline: ' + BASE_COUNT, LEFT_BUCKET.x, leftTop - 20);
+  ctx.fillText('Total: ' + (BASE_COUNT + caughtCount), RIGHT_BUCKET.x, rightTop - 20);
+  ctx.fillText('(+' + newCaughtCount + ')', RIGHT_BUCKET.x, rightTop - 40);
 }
 
 function drawBalls() {
@@ -394,23 +399,23 @@ function drawCannon() {
   ctx.fillStyle = '#fff';
   // base
   ctx.beginPath();
-  ctx.arc(820, 420, 20, 0, Math.PI * 2);
+  ctx.arc(CANNON_X, CANNON_Y, 20, 0, Math.PI * 2);
   ctx.fill();
   // barrel
   ctx.save();
-  ctx.translate(820, 420);
+  ctx.translate(CANNON_X, CANNON_Y);
   ctx.rotate(-angle);
   ctx.fillRect(0, -5, BARREL_LEN, 10);
   ctx.restore();
   // muzzle mark
   ctx.beginPath();
-  ctx.arc(820 + Math.cos(angle) * BARREL_LEN, 420 - Math.sin(angle) * BARREL_LEN, 3, 0, Math.PI * 2);
+  ctx.arc(CANNON_X + Math.cos(angle) * BARREL_LEN, CANNON_Y - Math.sin(angle) * BARREL_LEN, 3, 0, Math.PI * 2);
   ctx.fill();
 }
 
 function drawCharacter() {
-  const x = 770;
-  const y = 420;
+  const x = CANNON_X - 50;
+  const y = CANNON_Y;
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 3;
   ctx.beginPath();
