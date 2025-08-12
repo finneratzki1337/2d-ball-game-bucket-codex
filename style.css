@@ -173,7 +173,8 @@ button:active {
 
 .color-buttons {
   display: flex;
-  gap: 4px;
+  gap: 6px;
+  justify-content: center;
 }
 
 .color-btn {
@@ -193,7 +194,8 @@ button:active {
 
 .player-buttons {
   display: flex;
-  gap: 4px;
+  gap: 6px;
+  justify-content: center;
 }
 
 .player-btn {
@@ -286,20 +288,41 @@ button:active {
   display: flex;
 }
 
-#stats {
-  position: absolute;
-  bottom: 10px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-size: 11px;
-  pointer-events: none;
-  text-shadow: 0 0 5px #000;
+/* Scoreboard inside left panel */
+.scoreboard {
+  background: linear-gradient(#1e3349, #182a3c);
+  border: 2px solid #091522;
+  border-radius: 6px;
+  padding: 8px 6px 10px;
+  font-size: 9px;
+  line-height: 1.4;
+  box-shadow: 0 0 0 1px #2d4965 inset;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
+.score-header { text-align:center; font-weight:700; letter-spacing:1px; }
+.score-row { display:flex; align-items:center; gap:6px; font-size:9px; }
+.score-row .color-name { font-weight:700; min-width:56px; }
+.score-row .color-values { margin-left:auto; font-weight:400; }
+.score-row .swatch { width:14px; height:14px; border:1px solid #000; box-shadow:0 0 0 1px #2d4965 inset; border-radius:3px; }
+.score-row.empty { justify-content:center; opacity:0.5; }
 
-#stats div {
-  margin: 2px 0;
+/* Swatch colors via attribute selectors */
+.swatch[data-color="red"] { background:#f94144; }
+.swatch[data-color="blue"] { background:#277da1; }
+.swatch[data-color="yellow"] { background:#f9c74f; }
+.swatch[data-color="green"] { background:#90be6d; }
+.swatch[data-color="orange"] { background:#f3722c; }
+.score-title {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-align: center;
+  margin-bottom: 2px;
+  text-shadow: 0 0 6px #4ea3ff;
 }
+.score-line { text-align: left; white-space: normal; word-break: break-word; }
+.score-hint { text-align: center; opacity: 0.6; margin-top: 2px; }
 
 /* Small / narrow viewport tweaks */
 @media (max-width: 1280px) {

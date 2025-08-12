@@ -20,9 +20,10 @@ const BARREL_LEN = 60;
 const BALL_RADIUS = 8;
 const CANNON_X = 900;
 const CANNON_Y = 420;
-// bucket positions (slightly bigger to avoid overlap)
-const LEFT_BUCKET = { x: 230, y: 520, width: 225, height: 225 };
-const RIGHT_BUCKET = { x: 600, y: 530, width: 333, height: 333 };
+// bucket positions with unified baseline so they "stand" on same ground line
+const BUCKET_BASELINE_Y = 540; // bottom y for both buckets
+const LEFT_BUCKET = { x: 230, y: BUCKET_BASELINE_Y, width: 225, height: 225 };
+const RIGHT_BUCKET = { x: 600, y: BUCKET_BASELINE_Y, width: 333, height: 333 };
 
 // configure colours
 const COLORS = {
@@ -67,6 +68,7 @@ let armUpTicks = 0;
 let selectedColor = 'red';
 let selectedDeleteColor = 'red';
 let currentBatch = 0;
+let winShown = false; // ensure WIN overlay only triggers once
 
 // DOM refs
 let canvas, ctx, stage, winOverlay, relaunchBtn, continueBtn;
@@ -300,9 +302,7 @@ function handleCatch(ball) {
   newCaughtCount++;
   caughtBalls.push({ body: ball, color: ball.colorName, batch: currentBatch });
   playDing();
-  if (baseCount + caughtCount >= WIN_COUNT) {
-    showWin();
-  }
+  if (!winShown && baseCount + caughtCount >= WIN_COUNT) showWin();
 }
 
 // create vase and return sensor if requested
@@ -441,6 +441,7 @@ function resetGame() {
   newCaughtCount = 0;
   baseCount = 0;
   currentBatch = 0;
+  winShown = false;
   // Re-populate buckets
   prefillBuckets();
 }
@@ -477,7 +478,12 @@ function render() {
   if (armUpTicks > 0) armUpTicks--;
 
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
-  ctx.fillStyle = '#87ceeb';
+  // Draw night sky gradient (if starfield functions added later they can be invoked here)
+  const g = ctx.createLinearGradient(0, 0, 0, HEIGHT);
+  g.addColorStop(0, '#0f2135');
+  g.addColorStop(0.55, '#0b1828');
+  g.addColorStop(1, '#091320');
+  ctx.fillStyle = g;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
   drawClouds();
   drawBounds();
@@ -525,14 +531,14 @@ function drawVase(b) {
 }
 
 function drawLabels() {
+  // Slim labels retained for quick glance; detailed stats in sidebar scoreboard.
   ctx.fillStyle = '#fff';
-  ctx.font = '16px "Press Start 2P"';
+  ctx.font = '14px "Press Start 2P"';
   ctx.textAlign = 'center';
   const leftTop = LEFT_BUCKET.y - LEFT_BUCKET.height;
   const rightTop = RIGHT_BUCKET.y - RIGHT_BUCKET.height;
-  ctx.fillText('Baseline: ' + baseCount, LEFT_BUCKET.x, leftTop - 20);
-  ctx.fillText('Total: ' + (baseCount + caughtCount), RIGHT_BUCKET.x, rightTop - 20);
-  ctx.fillText('(+' + newCaughtCount + ')', RIGHT_BUCKET.x, rightTop - 40);
+  ctx.fillText('Baseline: ' + baseCount, LEFT_BUCKET.x, leftTop - 18);
+  ctx.fillText('Total: ' + (baseCount + caughtCount) + ' (+' + newCaughtCount + ')', RIGHT_BUCKET.x, rightTop - 18);
 }
 
 function drawBalls() {
@@ -598,8 +604,8 @@ function updateStats() {
   if (!leftStatsEl || !rightStatsEl) return;
   const leftCounts = countColors(leftPrefill);
   const rightCounts = countColors(rightPrefill.concat(caughtBalls.map(cb => cb.body)));
-  leftStatsEl.textContent = formatPercentages(leftCounts, 'Left');
-  rightStatsEl.textContent = formatPercentages(rightCounts, 'Right');
+  leftStatsEl.innerHTML = buildScoreHTML('LEFT', leftCounts);
+  rightStatsEl.innerHTML = buildScoreHTML('RIGHT', rightCounts);
 }
 
 function countColors(arr) {
@@ -610,20 +616,37 @@ function countColors(arr) {
 
 function formatPercentages(counts, label) {
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
-  if (total === 0) return `${label} (0):`;
+  if (total === 0) return `${label} (0)`;
   const parts = Object.entries(counts)
     .filter(([, v]) => v > 0)
-    .map(([c, v]) => `${Math.round((v / total) * 100)}% ${c} (${v})`);
-  return `${label} (${total}): ${parts.join(', ')}`;
+    .map(([c, v]) => `${c}:${v}`);
+  return `${label} (${total}) ${parts.join(' ')}`;
 }
 
 function showWin() {
+  if (winShown) return;
+  winShown = true;
   if (winOverlay) winOverlay.classList.add('show');
   if (autoInterval) {
     clearInterval(autoInterval);
     autoInterval = null;
     if (autoBtn) autoBtn.textContent = 'AUTO-FIRE';
   }
+}
+
+// Build scoreboard HTML (retro rows with color swatches)
+const SCORE_COLOR_ORDER = ['red', 'blue', 'yellow', 'green', 'orange'];
+function buildScoreHTML(label, counts) {
+  const total = Object.values(counts).reduce((a, b) => a + b, 0) || 0;
+  let html = `<div class=\"score-header\">${label} (${total})</div>`;
+  if (total === 0) return html + '<div class=\"score-row empty\">—</div>';
+  SCORE_COLOR_ORDER.forEach(color => {
+    const v = counts[color];
+    if (!v) return;
+    const pct = ((v / total) * 100).toFixed(1).replace(/\.0$/, '');
+    html += `<div class=\"score-row\"><span class=\"swatch\" data-color=\"${color}\"></span><span class=\"color-name\">${color.toUpperCase()}</span><span class=\"color-values\">${v} / ${pct}%</span></div>`;
+  });
+  return html;
 }
 
 // start

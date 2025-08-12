@@ -14,6 +14,13 @@
     <!-- Left Panel outside stage -->
     <div class="floating-panel left-panel" aria-label="maintenance panel">
       <div class="panel-header">SYSTEM</div>
+      <div class="scoreboard" aria-label="scoreboard">
+        <div class="score-title">SCORE</div>
+        <div id="leftStats" class="score-line"></div>
+        <div id="rightStats" class="score-line"></div>
+        <div class="score-hint">Goal: 500</div>
+      </div>
+      <div class="panel-separator"></div>
       <label>DELETE
         <div id="deleteColorButtons" class="color-buttons">
           <button class="color-btn selected" data-color="red" style="background:#f94144" title="Red"></button>
@@ -65,10 +72,7 @@
       </div>
     </div>
   </div>
-  <div id="stats">
-    <div id="leftStats"></div>
-    <div id="rightStats"></div>
-  </div>
+  <!-- Removed on-canvas stats; now inside left panel scoreboard -->
   <div id="winOverlay">
     <h2>GAME WON</h2>
     <button id="relaunchBtn">RESET</button>
