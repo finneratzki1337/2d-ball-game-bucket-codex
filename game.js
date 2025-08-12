@@ -25,7 +25,8 @@ const CANNON_Y = 420;
 // frame bottom = HEIGHT - 40; bucket stroke extends 10px beyond path; so offset path by 10px upward.
 const BUCKET_BASELINE_Y = HEIGHT - 40 - 10 - 10; // subtract wall thickness (20) for clean separation
 const LEFT_BUCKET = { x: 230, y: BUCKET_BASELINE_Y, width: 225, height: 225 };
-const RIGHT_BUCKET = { x: 600, y: BUCKET_BASELINE_Y, width: 333, height: 333 };
+// Right bucket enlarged by ~4% from 300 -> 312 (after prior reductions)
+const RIGHT_BUCKET = { x: 600, y: BUCKET_BASELINE_Y, width: 312, height: 312 };
 
 // configure colours
 const COLORS = {
@@ -34,6 +35,15 @@ const COLORS = {
   green: '#90be6d',
   red: '#f94144',
   orange: '#f3722c'
+};
+
+// Palette for golden retro bucket borders (kept small & focused)
+const GOLD_BORDER = {
+  dark: '#3a2610',
+  mid: '#8c5f1b',
+  light: '#e7c157',
+  shine: '#fff4cc',
+  accent: '#f8d978'
 };
 
 // initial balls for both buckets (edit these values to change starting distribution)
@@ -262,7 +272,8 @@ function prefillBucket(arr, bucket, config) {
       frictionAir: 0.01,
       density: 0.001
     });
-    body.renderColor = COLORS[colorName];
+  body.renderColor = COLORS[colorName];
+  body.isPrefill = true; // mark as baseline (old) ball
     body.colorName = colorName;
     World.add(world, body);
     arr.push(body);
@@ -328,17 +339,32 @@ function makeVase(x, y, innerW, innerH, withSensor) {
 }
 
 function drawPrefilledBalls(arr) {
+  if (!arr.length) return;
+  ctx.save();
+  ctx.globalAlpha = 0.55; // slight transparency to differentiate baseline
   arr.forEach(b => {
     ctx.beginPath();
     ctx.arc(b.position.x, b.position.y, BALL_RADIUS, 0, Math.PI * 2);
     ctx.fillStyle = b.renderColor;
     ctx.fill();
   });
+  ctx.restore();
 }
 
 // remove balls only from the right bucket
 function deleteBalls(colorName, num) {
   let removed = 0;
+  // Prefer removing baseline (old) balls first
+  for (let i = rightPrefill.length - 1; i >= 0 && removed < num; i--) {
+    const b = rightPrefill[i];
+    if (b.colorName === colorName) {
+      removeBall(b);
+      rightPrefill.splice(i, 1);
+      removed++;
+      baseCount--;
+    }
+  }
+  // Then remove newly caught / fired balls
   for (let i = caughtBalls.length - 1; i >= 0 && removed < num; i--) {
     const cb = caughtBalls[i];
     if (cb.color === colorName) {
@@ -348,15 +374,6 @@ function deleteBalls(colorName, num) {
       caughtCount--;
       countedIds.delete(cb.body.id);
       if (cb.batch === currentBatch && newCaughtCount > 0) newCaughtCount--;
-    }
-  }
-  for (let i = rightPrefill.length - 1; i >= 0 && removed < num; i--) {
-    const b = rightPrefill[i];
-    if (b.colorName === colorName) {
-      removeBall(b);
-      rightPrefill.splice(i, 1);
-      removed++;
-      baseCount--;
     }
   }
 }
@@ -517,23 +534,94 @@ function drawVases() {
 }
 
 function drawVase(b) {
-  // draw walls outside the physical boundaries so balls stay visibly inside
+  // Retro 2D gold bordered bucket with transparent interior.
+  // We layer multiple strokes + pixel accents WITHOUT filling the body so balls remain fully visible.
   const half = b.width / 2;
   const top = b.y - b.height;
-  const t = 20;
-  const offset = t / 2;
-  const frameBottom = HEIGHT - 40; // bottom line of outer frame
-  const bottomY = frameBottom - offset; // raise path so stroke edge sits on frame line
-  ctx.beginPath();
-  ctx.moveTo(b.x - half - offset, top - offset);
-  ctx.lineTo(b.x - half - offset, bottomY);
-  ctx.lineTo(b.x + half + offset, bottomY);
-  ctx.lineTo(b.x + half + offset, top - offset);
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,0.1)';
-  // Adjust fill height so interior ends at the visual bottom line
-  const adjustedHeight = (frameBottom - offset) - top; // interior fill stops above frame line
-  ctx.fillRect(b.x - half, top, b.width, adjustedHeight);
+  const t = 20;              // logical wall thickness for physics bodies
+  const offset = t / 2;      // visual stroke sits centered on path
+  const frameBottom = HEIGHT - 40; // frame border baseline
+  const bottomY = frameBottom - offset; // lift path so outer stroke edge rests on frame line
+
+  // Helper to stroke only left side, bottom, right side (OPEN TOP)
+  function strokeLayer(inset, color, width) {
+    ctx.beginPath();
+    const leftX = b.x - half - offset + inset;
+    const rightX = b.x + half + offset - inset;
+    const topY = top - offset + inset;
+    const baseY = bottomY - inset;
+    // Left wall
+    ctx.moveTo(leftX, baseY);
+    ctx.lineTo(leftX, topY + 10); // leave 10px gap from absolute top for openness
+    // Bottom
+    ctx.moveTo(leftX, baseY);
+    ctx.lineTo(rightX, baseY);
+    // Right wall
+    ctx.moveTo(rightX, baseY);
+    ctx.lineTo(rightX, topY + 10);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineCap = 'butt';
+    ctx.stroke();
+  }
+
+  // Layered strokes (outer to inner) creating depth while leaving mouth open
+  strokeLayer(0, GOLD_BORDER.dark, 22);   // silhouette
+  strokeLayer(1, GOLD_BORDER.mid, 18);    // main body
+  strokeLayer(4, GOLD_BORDER.light, 8);   // inner bevel
+  strokeLayer(6, GOLD_BORDER.shine, 3);   // thin shine edge
+
+  // Corner lip highlights to hint at a rim without closing full top
+  const lipSpan = Math.min(40, b.width * 0.2);
+  const lipY1 = top - offset + 4;
+  const lipY2 = lipY1 + 3;
+  // left lip
+  ctx.fillStyle = GOLD_BORDER.shine;
+  ctx.fillRect(b.x - half - offset + 6, lipY1, lipSpan, 3);
+  ctx.fillStyle = GOLD_BORDER.accent;
+  ctx.fillRect(b.x - half - offset + 6, lipY2, lipSpan, 2);
+  // right lip
+  ctx.fillStyle = GOLD_BORDER.shine;
+  ctx.fillRect(b.x + half + offset - 6 - lipSpan, lipY1, lipSpan, 3);
+  ctx.fillStyle = GOLD_BORDER.accent;
+  ctx.fillRect(b.x + half + offset - 6 - lipSpan, lipY2, lipSpan, 2);
+
+  // Side vertical highlight slivers
+  ctx.fillStyle = GOLD_BORDER.shine;
+  ctx.fillRect(b.x - half - offset + 5, top - offset + 10, 2, b.height * 0.25);
+  ctx.fillRect(b.x + half + offset - 7, top - offset + 10, 2, b.height * 0.25);
+
+  // Rivets along left & right edges (retro circular pixels)
+  function rivets(xEdge) {
+    const count = Math.max(4, Math.floor(b.height / 80));
+    for (let i = 0; i < count; i++) {
+      const ry = top + 30 + (i / (count - 1)) * (b.height - 90);
+      ctx.beginPath();
+      ctx.fillStyle = GOLD_BORDER.shine;
+      ctx.arc(xEdge, ry, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = GOLD_BORDER.dark;
+      ctx.arc(xEdge - 1, ry - 1, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  rivets(b.x - half - offset + 12);
+  rivets(b.x + half + offset - 12);
+
+  // Subtle inner wall texture stripes (very faint, keeps interior transparent)
+  ctx.save();
+  ctx.globalAlpha = 0.15;
+  ctx.strokeStyle = GOLD_BORDER.light;
+  ctx.lineWidth = 1;
+  for (let y = top + 18; y < bottomY - 18; y += 10) {
+    ctx.beginPath();
+    ctx.moveTo(b.x - half + 4, y);
+    ctx.lineTo(b.x + half - 4, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+  // (No fill: interior remains transparent for full ball visibility.)
 }
 
 function drawLabels() {
