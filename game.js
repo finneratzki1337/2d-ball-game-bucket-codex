@@ -47,11 +47,11 @@ const GOLD_BORDER = {
 };
 
 // initial balls for both buckets (edit these values to change starting distribution)
-const INITIAL_BLUE = 120;
-const INITIAL_RED = 50;
-const INITIAL_GREEN = 20;
-const INITIAL_ORANGE = 40;
-const INITIAL_YELLOW = 20;
+const INITIAL_BLUE = 162;
+const INITIAL_RED = 44;
+const INITIAL_GREEN = 10;
+const INITIAL_ORANGE = 30;
+const INITIAL_YELLOW = 10;
 const PREFILL_BALLS = {
   blue: INITIAL_BLUE,
   red: INITIAL_RED,
