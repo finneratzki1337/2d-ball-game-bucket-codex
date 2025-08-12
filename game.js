@@ -16,7 +16,7 @@ const BALL_RADIUS = 8;
 const CANNON_X = 900;
 const CANNON_Y = 420;
 // bucket positions (slightly bigger to avoid overlap)
-const LEFT_BUCKET = { x: 230, y: 520, width: 300, height: 300 };
+const LEFT_BUCKET = { x: 230, y: 520, width: 225, height: 225 };
 const RIGHT_BUCKET = { x: 600, y: 530, width: 333, height: 333 };
 
 // configure colours
@@ -52,13 +52,12 @@ const countedIds = new Set();
 const balls = [];
 const caughtBalls = [];
 const pops = [];
+const clouds = [];
 let engine, world, runner, sensor;
 let playerImg, player1Img, player2Img, player3Img;
 let angleDeg = 135;
 let powerPct = 60;
 let autoInterval = null;
-let charging = false;
-let chargePower = 0;
 let armUpTicks = 0;
 let selectedColor = 'red';
 let selectedDeleteColor = 'red';
@@ -184,13 +183,13 @@ function init() {
   });
 
   document.addEventListener('keydown', handleKeyDown);
-  document.addEventListener('keyup', handleKeyUp);
 
   // resume audio on first interaction
   document.addEventListener('click', () => getAudioCtx().resume(), { once: true });
 
   setupPhysics();
   prefillBuckets();
+  initClouds();
   setAngleFromInput(angleInput.value);
   setPower(powerInput.value);
   resizeCanvas();
@@ -242,31 +241,51 @@ function prefillBucket(arr, bucket, config) {
   for (const [name, count] of Object.entries(config)) {
     for (let i = 0; i < count; i++) entries.push(name);
   }
-  const margin = BALL_RADIUS + 12;
-  const cols = Math.floor((bucket.width - margin * 2) / (BALL_RADIUS * 2));
-  const rows = Math.floor((bucket.height - margin * 2) / (BALL_RADIUS * 2));
-  const startX = bucket.x - bucket.width / 2 + margin + BALL_RADIUS;
-  const startY = bucket.y - margin - BALL_RADIUS;
-  let placed = 0;
-  for (let r = 0; r < rows && placed < entries.length; r++) {
-    for (let c = 0; c < cols && placed < entries.length; c++) {
-      const colorName = entries[placed];
-      const x = startX + c * BALL_RADIUS * 2;
-      const y = startY - r * BALL_RADIUS * 2;
-      const body = Bodies.circle(x, y, BALL_RADIUS, {
-        restitution: 0.6,
-        friction: 0.05,
-        frictionAir: 0.01,
-        density: 0.001
-      });
-      body.renderColor = COLORS[colorName];
-      body.colorName = colorName;
-      World.add(world, body);
-      arr.push(body);
-      placed++;
-    }
+  const margin = BALL_RADIUS + 2;
+  const width = bucket.width - margin * 2;
+  const height = bucket.height - margin * 2;
+  entries.forEach(colorName => {
+    const x = bucket.x - bucket.width / 2 + margin + Math.random() * width;
+    const y = bucket.y - margin - Math.random() * height;
+    const body = Bodies.circle(x, y, BALL_RADIUS, {
+      restitution: 0.6,
+      friction: 0.05,
+      frictionAir: 0.01,
+      density: 0.001
+    });
+    body.renderColor = COLORS[colorName];
+    body.colorName = colorName;
+    World.add(world, body);
+    arr.push(body);
+  });
+  return entries.length;
+}
+
+function initClouds() {
+  for (let i = 0; i < 5; i++) {
+    clouds.push({
+      x: Math.random() * WIDTH,
+      y: Math.random() * 200 + 40,
+      w: 60 + Math.random() * 40,
+      h: 20 + Math.random() * 10,
+      speed: 0.2 + Math.random() * 0.3
+    });
   }
-  return placed;
+}
+
+function drawClouds() {
+  ctx.fillStyle = '#fff';
+  clouds.forEach(cl => {
+    ctx.beginPath();
+    ctx.ellipse(cl.x, cl.y, cl.w / 2, cl.h / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    cl.x -= cl.speed;
+    if (cl.x < -cl.w) {
+      cl.x = WIDTH + cl.w;
+      cl.y = Math.random() * 200 + 40;
+      cl.speed = 0.2 + Math.random() * 0.3;
+    }
+  });
 }
 
 function handleCatch(ball) {
@@ -429,21 +448,9 @@ function handleKeyDown(e) {
       setPower(powerPct + 1);
       break;
     case 'Space':
-      if (!charging) {
-        charging = true;
-        chargePower = 0;
-      }
+      fire(+ballsInput.value);
       e.preventDefault();
       break;
-  }
-}
-
-function handleKeyUp(e) {
-  if (e.code === 'Space' && charging) {
-    charging = false;
-    const scale = chargePower / 100;
-    fireOne(scale);
-    setPower(powerPct); // reset slider display
   }
 }
 
@@ -467,16 +474,12 @@ function randomColor() {
 
 function render() {
   const dt = engine.timing.delta;
-  if (charging) {
-    chargePower = clamp(chargePower + dt * 0.1, 0, 100);
-    powerInput.value = Math.round(chargePower);
-  }
   if (armUpTicks > 0) armUpTicks--;
 
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
-  ctx.fillStyle = '#001f3f';
+  ctx.fillStyle = '#87ceeb';
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
+  drawClouds();
   drawBounds();
   drawBalls();
   drawPrefilledBalls(leftPrefill);
