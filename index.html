@@ -10,6 +10,9 @@
 </head>
 <body>
   <h1 id="title">ASTRA 500</h1>
+  <div id="stage">
+    <canvas id="game" width="1024" height="576"></canvas>
+  </div>
   <aside id="menu">
     <label># Balls
       <input id="ballsInput" type="number" min="1" max="200" value="4" />
@@ -51,9 +54,6 @@
       <button id="deleteBtn">DELETE</button>
     </label>
   </aside>
-  <div id="stage">
-    <canvas id="game" width="1024" height="576"></canvas>
-  </div>
   <div id="stats">
     <div id="leftStats"></div>
     <div id="rightStats"></div>
