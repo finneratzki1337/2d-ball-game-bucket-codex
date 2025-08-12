@@ -14,6 +14,7 @@ const HEIGHT = 576;
 const BARREL_LEN = 60;
 const BALL_RADIUS = 9;
 const BASE_COUNT = 250;
+const PREFILL_COUNT = 250;
 
 // State
 let caughtCount = 0;
@@ -21,7 +22,7 @@ let newCaughtCount = 0;
 const countedIds = new Set();
 const balls = [];
 let engine, world, runner, sensor;
-let angleDeg = 45;
+let angleDeg = 135;
 let powerPct = 60;
 let autoInterval = null;
 let charging = false;
@@ -31,6 +32,8 @@ let armUpTicks = 0;
 // DOM refs
 let canvas, ctx, stage;
 let ballsInput, colorInput, angleInput, powerInput, shootBtn, autoBtn, resetBtn;
+const leftPrefill = [];
+const rightPrefill = [];
 
 // Audio
 let audioCtx;
@@ -103,6 +106,7 @@ function init() {
   document.addEventListener('click', () => getAudioCtx().resume(), { once: true });
 
   setupPhysics();
+  prefillBuckets();
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
   requestAnimationFrame(render);
@@ -128,8 +132,8 @@ function setupPhysics() {
   World.add(world, [ground, ceiling, leftWall, rightWall]);
 
   // vases
-  makeVase(220, 420, 120, 140, false); // baseline
-  sensor = makeVase(520, 380, 180, 180, true); // returns sensor for large vase
+  makeVase(220, 420, 260, 260, false); // left bucket
+  sensor = makeVase(600, 380, 360, 300, true); // large bucket with sensor
 
   // collision for sensor
   Events.on(engine, 'collisionStart', evt => {
@@ -139,6 +143,24 @@ function setupPhysics() {
       else if (bodyB === sensor && balls.includes(bodyA)) handleCatch(bodyA);
     }
   });
+}
+
+function prefillBuckets() {
+  leftPrefill.length = 0;
+  rightPrefill.length = 0;
+  for (let i = 0; i < PREFILL_COUNT; i++) {
+    const color = randomColor();
+    leftPrefill.push({
+      x: randomRange(90 + BALL_RADIUS, 350 - BALL_RADIUS),
+      y: randomRange(160 + BALL_RADIUS, 420 - BALL_RADIUS),
+      color
+    });
+    rightPrefill.push({
+      x: randomRange(420 + BALL_RADIUS, 780 - BALL_RADIUS),
+      y: randomRange(380 - BALL_RADIUS - 150, 380 - BALL_RADIUS),
+      color
+    });
+  }
 }
 
 function handleCatch(ball) {
@@ -167,6 +189,15 @@ function makeVase(x, y, innerW, innerH, withSensor) {
   }
   World.add(world, bodies);
   return sensorBody;
+}
+
+function drawPrefilledBalls(arr) {
+  arr.forEach(b => {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, BALL_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = b.color;
+    ctx.fill();
+  });
 }
 
 function fire(n) {
@@ -203,7 +234,7 @@ function fireOne(powerScale = 1) {
 }
 
 function setAngle(val) {
-  angleDeg = clamp(+val, 10, 80);
+  angleDeg = clamp(+val, 10, 170);
   angleInput.value = angleDeg;
 }
 function setPower(val) {
@@ -276,6 +307,15 @@ function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
 }
 
+function randomColor() {
+  const palette = ['#f94144', '#f3722c', '#f8961e', '#f9844a', '#f9c74f', '#90be6d', '#43aa8b', '#577590', '#277da1'];
+  return palette[Math.floor(Math.random() * palette.length)];
+}
+
+function randomRange(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
 function render() {
   const dt = engine.timing.delta;
   if (charging) {
@@ -289,6 +329,8 @@ function render() {
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
   drawBounds();
+  drawPrefilledBalls(leftPrefill);
+  drawPrefilledBalls(rightPrefill);
   drawVases();
   drawLabels();
   drawBalls();
@@ -307,34 +349,34 @@ function drawBounds() {
 function drawVases() {
   ctx.strokeStyle = '#fff';
   ctx.lineWidth = 20;
-  // small vase
+  // left bucket
   ctx.beginPath();
-  ctx.moveTo(160, 280);
-  ctx.lineTo(160, 420);
-  ctx.lineTo(280, 420);
-  ctx.lineTo(280, 280);
+  ctx.moveTo(90, 160);
+  ctx.lineTo(90, 420);
+  ctx.lineTo(350, 420);
+  ctx.lineTo(350, 160);
   ctx.stroke();
   ctx.fillStyle = 'rgba(255,255,255,0.1)';
-  ctx.fillRect(160 + 10, 280, 120 - 20, 140);
+  ctx.fillRect(100, 160, 260 - 20, 260);
 
-  // large vase
+  // right bucket
   ctx.beginPath();
-  ctx.moveTo(430, 200);
-  ctx.lineTo(430, 380);
-  ctx.lineTo(610, 380);
-  ctx.lineTo(610, 200);
+  ctx.moveTo(420, 80);
+  ctx.lineTo(420, 380);
+  ctx.lineTo(780, 380);
+  ctx.lineTo(780, 80);
   ctx.stroke();
   ctx.fillStyle = 'rgba(255,255,255,0.1)';
-  ctx.fillRect(430 + 10, 200, 180 - 20, 180);
+  ctx.fillRect(430, 80, 360 - 20, 300);
 }
 
 function drawLabels() {
   ctx.fillStyle = '#fff';
   ctx.font = '16px "Press Start 2P"';
   ctx.textAlign = 'center';
-  ctx.fillText('Baseline: 250', 220, 480);
-  ctx.fillText('Total: ' + (BASE_COUNT + caughtCount), 520, 420);
-  ctx.fillText('(+' + newCaughtCount + ')', 520, 440);
+  ctx.fillText('2024', 220, 480);
+  ctx.fillText('Total: ' + (BASE_COUNT + caughtCount), 600, 420);
+  ctx.fillText('(+' + newCaughtCount + ')', 600, 440);
 }
 
 function drawBalls() {
